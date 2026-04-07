@@ -40,17 +40,21 @@ class IterableArray:
 		self.index = 0
 	def last(self):
 		self.index = self.index_max
-	
+
+class Navigation:
+	next = 'NEXT'
+	prev = 'PREV'
+
 def getInput():
 	userInput = ''
 	while True:
 		ch = readchar.readkey()
 		# Map Arrow Keys to your internal logic
 		if ch in (key.UP, key.LEFT):
-			return 'Prev'
+			return Navigation.prev
 		
 		elif ch in (key.DOWN, key.RIGHT):
-			return 'Next'
+			return Navigation.next
 		
 		elif ch == key.ENTER:
 			# Return the text typed so far
@@ -256,14 +260,14 @@ class simpleMenu( ):
 			subMenu.setInput(inp)
 			self.set_menuPrintableList()
 			return
-		if ( inp == 'Next'):
+		if ( inp == Navigation.next):
 			if (self.choiceIteration.is_max()):
 				if(type(self.parent) is not type(None)):
 					self.parent.setInput(inp, childInp=True)
 				self.choiceIteration.first()
 			else:
 				self.choiceIteration.next()
-		elif ( inp == 'Prev'):
+		elif ( inp == Navigation.prev):
 			if (self.choiceIteration.is_min()):
 				if(self.parent is not None):
 					self.parent.setInput(inp, childInp=True)
@@ -274,9 +278,14 @@ class simpleMenu( ):
 		else:
 			if( inp != '' ):
 				menuOption = self.menuOptions.get( inp, False )
+			# If inp is empty string, it means 'Enter' was pressed
 			else:
 				menuOption = self.menuOptions.get( self.choiceIteration.get(), False )
-			if( menuOption ):
+			#first option is always back, call back in parent menu
+			if (self.choiceIteration.is_min()):
+				if(self.parent is not None):
+					self.parent.setInput(Navigation.prev, childInp=True)
+			elif( menuOption ):
 				menuOption[ 0 ]()
 			else:
 				print( inp, 'is not on list' )
