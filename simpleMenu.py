@@ -1,6 +1,8 @@
 import os 
 import functools
-from msvcrt import getch
+import sys
+import readchar
+from readchar import key
 
 #clear terminal
 class IterableArray:
@@ -27,6 +29,7 @@ class IterableArray:
 
 	def restart( self ):
 		self.index = 1
+
 	def get(self):
 		return self.arr[ self.index ]
 	def is_max(self):
@@ -37,26 +40,38 @@ class IterableArray:
 		self.index = 0
 	def last(self):
 		self.index = self.index_max
-
+	
 def getInput():
 	userInput = ''
 	while True:
-		ch = getch()
-		if ( ch == b'H' or ch == b'K' ):
+		ch = readchar.readkey()
+		# Map Arrow Keys to your internal logic
+		if ch in (key.UP, key.LEFT):
 			return 'Prev'
-		elif ( ch == b'P' or ch == b'M' ):
+		
+		elif ch in (key.DOWN, key.RIGHT):
 			return 'Next'
-		elif ( ch == b'\r' ):
+		
+		elif ch == key.ENTER:
+			# Return the text typed so far
 			return userInput
-		elif ( ch == b'\xe0' ):
-			pass
-		elif( ch == b'\b' ):
-			if ( len( userInput ) > 0 ):
+		elif ch == key.BACKSPACE:
+			if len(userInput) > 0:
 				userInput = userInput[:-1]
-				print( '\b \b', end = '', flush = True )
-		else:
-			userInput += ch.decode()
-			print( ch.decode(), end = '', flush = True )
+				# Standard way to "erase" a character in terminal: 
+				# Backspace, Space, Backspace
+				sys.stdout.write('\b \b')
+				sys.stdout.flush()
+		
+		elif ch == key.CTRL_C:
+			# Good practice to handle manual interrupts
+			raise KeyboardInterrupt
+
+		elif len(ch) == 1:
+			# Regular character input
+			userInput += ch
+			sys.stdout.write(ch)
+			sys.stdout.flush()
 
 #clear terminal
 def clearScreen( ):
@@ -227,6 +242,14 @@ class simpleMenu( ):
 	def set_Iterator(self):
 		self.choiceIteration = IterableArray( list( self.menuOptions.keys() ) )
 
+	def getPath(self):
+		path = [self.title]
+		current = self.parent
+		while current is not None:
+			path.insert(0, current.title)
+			current = current.parent
+		return path
+
 	def setInput(self, inp, childInp=False):
 		if (self.menuOptionsExtra.get( self.choiceIteration.get(), False ) and not childInp):
 			subMenu=self.menuOptionsExtra[self.choiceIteration.get()]
@@ -242,7 +265,10 @@ class simpleMenu( ):
 				self.choiceIteration.next()
 		elif ( inp == 'Prev'):
 			if (self.choiceIteration.is_min()):
-				self.parent.setInput(inp, childInp=True)
+				if(self.parent is not None):
+					self.parent.setInput(inp, childInp=True)
+				else:
+					self.choiceIteration.last()
 			else:
 				self.choiceIteration.prev()
 		else:
